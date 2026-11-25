@@ -53,9 +53,12 @@ private data class CreatorVideoDetails(
 )
 
 @Composable
-internal fun CreatorStudioScreen() {
+internal fun CreatorStudioScreen(initialUri: Uri? = null) {
     val context = LocalContext.current
-    var uriText by rememberSaveable { mutableStateOf<String?>(null) }
+    var uriText by rememberSaveable { mutableStateOf<String?>(initialUri?.toString()) }
+    LaunchedEffect(initialUri) {
+        if (initialUri != null) uriText = initialUri.toString()
+    }
     var playbackSpeed by rememberSaveable { mutableStateOf(1f) }
     val uri = remember(uriText) { uriText?.let(Uri::parse) }
     var details by remember(uri) { mutableStateOf<CreatorVideoDetails?>(null) }

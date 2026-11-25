@@ -1,6 +1,9 @@
 package app.zyro.demo
 
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,16 +56,40 @@ private enum class Destination(val title: String, val symbol: String) {
 }
 
 class MainActivity : ComponentActivity() {
+    private val incomingVideo = mutableStateOf<Uri?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { ZyroHostApp() }
+        incomingVideo.value = extractSharedVideo(intent)
+        setContent { ZyroHostApp(incomingVideo.value) }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        incomingVideo.value = extractSharedVideo(intent)
+    }
+
+    private fun extractSharedVideo(source: Intent?): Uri? {
+        if (source?.action != Intent.ACTION_SEND || source.type?.startsWith("video/") != true) {
+            return null
+        }
+        return if (Build.VERSION.SDK_INT >= 33) {
+            source.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            source.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+        }
     }
 }
 
 @Composable
-private fun ZyroHostApp() {
+private fun ZyroHostApp(sharedVideoUri: Uri?) {
     var destination by rememberSaveable { mutableStateOf(Destination.HOME.name) }
     val selected = Destination.valueOf(destination)
+    androidx.compose.runtime.LaunchedEffect(sharedVideoUri) {
+        if (sharedVideoUri != null) destination = Destination.MEDIA.name
+    }
 
     MaterialTheme {
         Scaffold(
@@ -93,7 +120,7 @@ private fun ZyroHostApp() {
                         onClose = { destination = Destination.HOME.name }
                     )
                     Destination.RECORDER -> RecorderScreen()
-                    Destination.MEDIA -> CreatorStudioScreen()
+                    Destination.MEDIA -> CreatorStudioScreen(initialUri = sharedVideoUri)
                 }
             }
         }
