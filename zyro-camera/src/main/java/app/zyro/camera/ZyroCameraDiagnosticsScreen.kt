@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -64,12 +65,18 @@ fun ZyroCameraDiagnosticsScreen(
     var permissionDenied by remember { mutableStateOf(false) }
     var isScanning by remember { mutableStateOf(true) }
     var report by remember { mutableStateOf<ZyroCameraReport?>(null) }
+    var selectedCameraId by remember { mutableStateOf<String?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasCameraPermission = granted
         permissionDenied = !granted
+    }
+
+    LaunchedEffect(report) {
+        val ids = report?.cameras.orEmpty().map { it.cameraId }
+        if (selectedCameraId !in ids) selectedCameraId = ids.firstOrNull()
     }
 
     LaunchedEffect(hasCameraPermission) {
@@ -177,10 +184,23 @@ fun ZyroCameraDiagnosticsScreen(
                         color = CameraText,
                         fontWeight = FontWeight.SemiBold
                     )
-                    currentReport.cameras.forEach { camera ->
-                        CameraInfoCard(camera)
-                        ZyroVideoQualitySelector(camera = camera)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        currentReport.cameras.forEach { camera ->
+                            FilterChip(
+                                selected = selectedCameraId == camera.cameraId,
+                                onClick = { selectedCameraId = camera.cameraId },
+                                label = { Text("${camera.lensFacing} · ${camera.cameraId}") }
+                            )
+                        }
                     }
+                    val activeCamera = currentReport.cameras.firstOrNull {
+                        it.cameraId == selectedCameraId
+                    } ?: currentReport.cameras.first()
+                    CameraInfoCard(activeCamera)
+                    ZyroVideoQualitySelector(camera = activeCamera)
                 }
 
                 currentReport?.warnings?.forEach { warning ->
