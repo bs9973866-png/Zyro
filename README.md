@@ -33,6 +33,7 @@ The repository contains an Android Gradle project with two modules.
 - Compose diagnostics screen with a permission prompt for extended metadata and a refresh action.
 - Capability-based video quality selector (480p / 720p / 1080p / 1440p / 4K / maximum) and FPS choices (24 / 25 / 30 / 60 / 90 / 120) only when supported by the reported Camera2 metadata.
 - Selection callback returns the chosen resolution and target FPS for a compatible host recorder; it does not itself start recording or guarantee a specific delivered frame rate.
+- Selected quality and FPS are saved locally with DataStore separately for each camera and restored when the selector is opened again.
 - Runs metadata queries on an IO dispatcher.
 - Does not open the camera, record audio/video, or take photos.
 
