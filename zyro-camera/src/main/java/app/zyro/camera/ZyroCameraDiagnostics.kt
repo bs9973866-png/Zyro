@@ -27,6 +27,7 @@ data class ZyroCameraInfo(
     val sensorOrientation: Int?,
     val flashAvailable: Boolean?,
     val aeFpsRanges: List<String>,
+    val fpsRanges: List<ZyroFpsRange>,
     val recordingSizes: List<ZyroVideoSize>,
     val highSpeedModes: List<String>,
     val videoStabilization: Boolean?,
@@ -82,9 +83,12 @@ object ZyroCameraDiagnostics {
                     .distinctBy { "${it.width}x${it.height}" }
                     .sortedByDescending { it.width.toLong() * it.height.toLong() }
 
-                val aeFpsRanges = characteristics
+                val numericFpsRanges = characteristics
                     .get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
                     .orEmpty()
+                    .map { ZyroFpsRange(it.lower, it.upper) }
+                    .distinct()
+                val aeFpsRanges = numericFpsRanges
                     .map { "${it.lower}–${it.upper} FPS" }
                     .distinct()
                     .sorted()
@@ -140,6 +144,7 @@ object ZyroCameraDiagnostics {
                     sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION),
                     flashAvailable = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE),
                     aeFpsRanges = aeFpsRanges,
+                    fpsRanges = numericFpsRanges,
                     recordingSizes = recordingSizes,
                     highSpeedModes = highSpeedModes,
                     videoStabilization = videoStabilizationModes?.contains(
