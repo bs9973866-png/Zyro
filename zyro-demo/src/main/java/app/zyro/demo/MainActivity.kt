@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -110,8 +110,7 @@ private fun HomeScreen(onOpen: (Destination) -> Unit) {
         Spacer(Modifier.height(12.dp))
         Text("ZYRO", color = Color(0xFFB56CFF), fontSize = 14.sp,
             fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
-        Text("Твой Android.
-Твои настройки.", color = Color(0xFFF5F0FF),
+        Text("Твой Android.\nТвои настройки.", color = Color(0xFFF5F0FF),
             fontSize = 32.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold)
         Text(
             "Тестовая оболочка ZYRO: настройки интерфейса, информация о камерах и ручная видеозапись.",
