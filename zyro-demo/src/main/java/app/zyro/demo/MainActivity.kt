@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -27,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -165,6 +168,8 @@ private fun HomeCard(
 @Composable
 private fun RecorderScreen() {
     val context = LocalContext.current
+    var qualityName by rememberSaveable { mutableStateOf(ZyroVideoQuality.FULL_HD.name) }
+    val selectedQuality = ZyroVideoQuality.valueOf(qualityName)
     Column(
         modifier = Modifier.fillMaxSize()
             .background(Color(0xFF090711))
@@ -172,8 +177,21 @@ private fun RecorderScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Text("Качество записи", color = Color(0xFFF5F0FF), fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            ZyroVideoQuality.entries.forEach { quality ->
+                FilterChip(
+                    selected = selectedQuality == quality,
+                    onClick = { qualityName = quality.name },
+                    label = { Text(quality.label) }
+                )
+            }
+        }
         ZyroCameraRecorder(
-            quality = ZyroVideoQuality.FULL_HD,
+            quality = selectedQuality,
             onVideoSaved = { uri ->
                 Toast.makeText(context, "Видео сохранено: $uri", Toast.LENGTH_LONG).show()
             },

@@ -2,6 +2,8 @@
     <application
         android:allowBackup="false"
         android:label="ZYRO"
+        android:icon="@drawable/ic_zyro"
+        android:roundIcon="@drawable/ic_zyro"
         android:supportsRtl="true"
         android:theme="@style/ZYROTheme">
         <activity

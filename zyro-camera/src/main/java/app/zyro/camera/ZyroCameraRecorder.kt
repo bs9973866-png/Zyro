@@ -1,6 +1,9 @@
 package app.zyro.camera
 
 import android.Manifest
+import android.content.ContentValues
+import android.os.Build
+import android.provider.MediaStore
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -10,6 +13,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.OutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
@@ -60,9 +65,9 @@ private val RecorderMuted = Color(0xFFAAA2BC)
 /**
  * User-controlled CameraX preview and silent video recorder.
  *
- * Recording starts only after the user presses the record button. Files stay in
- * the host app's private files directory; the host can export them explicitly.
- * No microphone permission is requested and no background recording service is used.
+ * Recording starts only after the user presses the record button. Android 10+
+ * saves to the shared Movies/ZYRO collection; older versions use the app-private
+ * files directory. No microphone permission or background recording is used.
  */
 @Composable
 fun ZyroCameraRecorder(
@@ -222,15 +227,27 @@ fun ZyroCameraRecorder(
                                 currentOnError("Камера ещё не готова.")
                             } else {
                                 runCatching {
-                                    val directory = File(context.filesDir, "Movies/ZYRO")
-                                    check(directory.exists() || directory.mkdirs()) {
-                                        "Не удалось создать папку для видео."
-                                    }
-                                    val outputFile = File(
-                                        directory,
-                                        "zyro-${System.currentTimeMillis()}.mp4"
-                                    )
-                                    val outputOptions = FileOutputOptions.Builder(outputFile).build()
+                                    var fallbackFile: File? = null
+                                    val fileName = "zyro-${System.currentTimeMillis()}.mp4"
+                                    val outputOptions: OutputOptions =
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                            val values = ContentValues().apply {
+                                                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                                                put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+                                                put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/ZYRO")
+                                            }
+                                            MediaStoreOutputOptions.Builder(
+                                                context.contentResolver,
+                                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                                            ).setContentValues(values).build()
+                                        } else {
+                                            val directory = File(context.filesDir, "Movies/ZYRO")
+                                            check(directory.exists() || directory.mkdirs()) {
+                                                "Не удалось создать папку для видео."
+                                            }
+                                            File(directory, fileName).also { fallbackFile = it }
+                                                .let { FileOutputOptions.Builder(it).build() }
+                                        }
                                     val newRecording = capture.output
                                         .prepareRecording(context, outputOptions)
                                         .start(mainExecutor) { event ->
@@ -240,7 +257,14 @@ fun ZyroCameraRecorder(
                                                     isRecording = false
                                                     activeRecording.set(null)
                                                     if (event.hasError()) {
-                                                        outputFile.delete()
+                                                        fallbackFile?.delete()
+                                                        runCatching {
+                                                            context.contentResolver.delete(
+                                                                event.outputResults.outputUri,
+                                                                null,
+                                                                null
+                                                            )
+                                                        }
                                                         currentOnError(
                                                             "Запись не завершилась (код ${event.error})."
                                                         )
@@ -271,7 +295,11 @@ fun ZyroCameraRecorder(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    "Видео записывается без звука и сохраняется локально в приватной папке приложения. Для публикации хост-приложение должно отдельно экспортировать файл.",
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        "Видео без звука сохраняется в Movies/ZYRO и становится доступно в галерее после завершения записи."
+                    } else {
+                        "Видео без звука сохраняется в приватной папке приложения. Для публикации хост-приложение должно отдельно экспортировать файл."
+                    },
                     color = RecorderMuted,
                     style = MaterialTheme.typography.bodySmall
                 )
