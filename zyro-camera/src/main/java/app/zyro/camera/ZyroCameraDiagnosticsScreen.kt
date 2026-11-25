@@ -53,7 +53,9 @@ private val CameraMuted = Color(0xFFAAA2BC)
 @Composable
 fun ZyroCameraDiagnosticsScreen(
     modifier: Modifier = Modifier,
-    onClose: (() -> Unit)? = null
+    onClose: (() -> Unit)? = null,
+    onVideoSelectionChanged: (ZyroVideoSelection) -> Unit = {},
+    onAdvancedOptionsChanged: (ZyroAdvancedVideoOptions) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -201,8 +203,14 @@ fun ZyroCameraDiagnosticsScreen(
                         it.cameraId == selectedCameraId
                     } ?: currentReport.cameras.first()
                     CameraInfoCard(activeCamera)
-                    ZyroVideoQualitySelector(camera = activeCamera)
-                    ZyroCameraRecordingOptions(camera = activeCamera)
+                    ZyroVideoQualitySelector(
+                        camera = activeCamera,
+                        onSelectionChanged = onVideoSelectionChanged
+                    )
+                    ZyroCameraRecordingOptions(
+                        camera = activeCamera,
+                        onOptionsChanged = onAdvancedOptionsChanged
+                    )
                 }
 
                 currentReport?.warnings?.forEach { warning ->

@@ -1,108 +1,105 @@
 # ZYRO
 
-**ZYRO** — Android customization project for a TikTok-compatible experience. The project is being built as modular Android libraries so its own settings UI can be integrated only through a compatible, authorized host-app path.
+**ZYRO** — набор Android-библиотек для отдельного интерфейса настроек и медиакомпонентов, которые можно подключать к совместимому Android-приложению через разрешённый интеграционный путь.
 
-> ZYRO does not include TikTok's proprietary source, APK, signing keys, credentials, or private service endpoints. The current modules are independent libraries and are not injected into TikTok.
+> В репозитории нет исходного кода TikTok, его APK, ключей подписи, закрытых API или данных авторизации. ZYRO сейчас не внедряется в TikTok и не перепаковывает его APK.
 
-## Current implementation
-
-The repository contains an Android Gradle project with two modules.
+## Что реализовано
 
 ### `zyro-settings`
 
-- Jetpack Compose settings screen in Russian.
-- Dark ZYRO visual foundation with purple accent.
-- Liquid Glass master toggle.
-- Blur and transparency toggles (these store preferences; a host must implement the actual visual effects).
-- Surface intensity, corner radius, and animation-strength controls.
-- System / dark / light appearance mode selection.
-- Reduce-motion accessibility option.
-- Violet / pink / cyan accent preset selection.
-- Reset appearance settings.
-- Local persistence with Android DataStore Preferences.
+- Экран настроек на Jetpack Compose, интерфейс на русском.
+- Тёмная основа ZYRO, Liquid Glass-переключатель.
+- Настройки размытия и прозрачности, интенсивности поверхностей, радиуса углов и силы анимаций.
+- Системная, тёмная и светлая темы.
+- Режим уменьшения движения.
+- Пресеты акцента: фиолетовый, розовый и бирюзовый.
+- Сохранение настроек локально через DataStore Preferences.
+- Сброс настроек внешнего вида.
+
+Важно: переключатели blur/transparency пока сохраняют предпочтения. Фактическое размытие и прозрачность должен отрисовать host-app, использующий эти значения.
 
 ### `zyro-camera`
 
-- Camera2 camera enumeration, with front / rear / external camera labels.
-- Camera2 hardware level and sensor orientation.
-- Advertised AE FPS ranges.
-- Video output resolutions exposed for `MediaRecorder`.
-- Constrained high-speed video size / FPS combinations where Android exposes them.
-- Electronic and optical stabilization capability flags.
-- Dynamic-range profiles (SDR / HLG10 / HDR10 / HDR10+) on Android 13+.
-- Compose diagnostics screen with a permission prompt for extended metadata and a refresh action.
-- Capability-based video quality selector (480p / 720p / 1080p / 1440p / 4K / maximum) and FPS choices (24 / 25 / 30 / 60 / 90 / 120) only when supported by the reported Camera2 metadata.
-- Selection callback returns the chosen resolution and target FPS for a compatible host recorder; it does not itself start recording or guarantee a specific delivered frame rate.
-- Selected quality and FPS are saved locally with DataStore separately for each camera and restored when the selector is opened again.
-- Runs metadata queries on an IO dispatcher.
-- Does not open the camera, record audio/video, or take photos.
+- Диагностика Camera2: фронтальные, основные и внешние камеры, уровень Camera2, ориентация сенсора и вспышка.
+- Поддерживаемые камерой размеры видеопотоков и AE FPS-диапазоны.
+- Доступные high-speed режимы, EIS/OIS и динамические HDR-профили, если Android сообщает их.
+- Выбор качества и FPS только из вариантов, которые объявила камера.
+- Сохранение выбранных качества/FPS отдельно для каждой камеры.
+- Выбор EIS/OIS/HDR с передачей параметров в host-app через callback.
+- CameraX preview и ручная запись видео: пользователь сам выдаёт разрешение и нажимает «Начать запись» / «Остановить запись».
+- Переключение основной и фронтальной камеры в рекордере.
+- Запись без микрофона и звука. Библиотека не запрашивает `RECORD_AUDIO`, не начинает съёмку в фоне и не отправляет видео по сети.
+- Результат записи сохраняется в приватной папке host-app: `files/Movies/ZYRO`. Host-app может отдельно предоставить пользователю экспорт/публикацию файла.
 
-### Camera diagnostics entry point
+Качество, FPS, стабилизация и HDR зависят от камеры и поддерживаемой комбинации потоков. Наличие режима в системных характеристиках не гарантирует идентичную частоту кадров, обработку или качество после экспорта.
 
-Render the screen from a Compose host:
+## Подключение библиотеки
+
+Открой проект в Android Studio с JDK 17 и Android SDK Platform 35+. Подключи нужный модуль к совместимому Android host-проекту:
 
 ```kotlin
-ZyroCameraDiagnosticsScreen(
-    onClose = { /* return to the host app */ }
+dependencies {
+    implementation(project(":zyro-settings"))
+    implementation(project(":zyro-camera"))
+}
+```
+
+### Экран настроек
+
+```kotlin
+ZyroSettingsScreen(
+    onClose = { /* закрыть экран host-приложения */ }
 )
 ```
 
-Add the module to an authorized Android host project:
+### Диагностика и передача выбранных параметров
 
 ```kotlin
-implementation(project(":zyro-camera"))
+ZyroCameraDiagnosticsScreen(
+    onClose = { /* закрыть экран */ },
+    onVideoSelectionChanged = { selection ->
+        // Применить size и fps в собственном совместимом recorder.
+    },
+    onAdvancedOptionsChanged = { options ->
+        // Проверить и применить EIS/OIS/HDR в собственной сессии.
+    }
+)
 ```
 
-The library manifest declares `android.permission.CAMERA` and an optional camera hardware feature. Android merges the permission into the host manifest; the host still controls the runtime permission flow. The diagnostics screen asks for permission only when the user chooses extended diagnostics. Basic information is scanned without opening a camera.
+### Отдельный предпросмотр и запись
 
-Camera2 FPS ranges and high-speed combinations are device-reported capabilities, not guarantees for a particular app's recording pipeline, thermal state, export settings, or server upload. TikTok may process or re-encode media independently.
+```kotlin
+ZyroCameraRecorder(
+    quality = ZyroVideoQuality.FULL_HD,
+    onVideoSaved = { uri ->
+        // Показать пользователю сохранённый файл и действие экспорта.
+    },
+    onError = { message ->
+        // Показать ошибку в интерфейсе host-приложения.
+    }
+)
+```
 
-## Planned settings
+Библиотека объявляет `android.permission.CAMERA`; host-app обязан корректно запросить runtime-разрешение. Запись запускается только после действия пользователя. Аудио не записывается.
 
-### Video and upload quality
-- Display capture and export capabilities separately.
-- Quality presets based on device capabilities.
-- Warn when a selected export setting may be re-encoded by the platform.
-- No claims that a setting can force a server-side video format.
+## Сборка и тесты
 
-### Region and language
-- Show app-reported region / language information where available.
-- Locale and interface-language preferences.
-- Account region, catalog availability, and server-side feature eligibility remain controlled by the platform. ZYRO will not spoof identity, location, or eligibility, or bypass regional restrictions.
-
-### Privacy and quality of life
-- Local-only settings storage by default.
-- No collection of TikTok passwords, session cookies, or authentication tokens.
-- Clear cache controls limited to ZYRO-owned data.
-- Diagnostics export with personal data redacted.
-- Settings search, favorites, import/export of ZYRO preferences, compatibility labels, changelog, diagnostics, and reset options.
-- Russian and English localization.
-
-## Technical constraints
-
-- TikTok is proprietary. A compiled APK is not the original editable Kotlin/Java project.
-- The current modules do not modify, inject into, or repackage TikTok.
-- Integration must use a compatible, authorized route and respect Android security boundaries and applicable platform terms.
-- Do not patch authentication, payment, anti-abuse, integrity, or account-protection mechanisms.
-- Camera controls must be based on Android-reported device capabilities; never advertise unsupported FPS modes.
-- Blur/transparency controls in the initial UI are stored preferences only. Rendering effects must be supplied by the host integration.
-
-## Build
-
-Open the repository in Android Studio with JDK 17 and Android SDK Platform 35 installed. Then build both libraries:
+В проекте пока нет Gradle Wrapper. Локальная сборка при установленном Gradle 8.9:
 
 ```bash
-gradle :zyro-settings:assembleDebug :zyro-camera:assembleDebug
+gradle :zyro-settings:assembleDebug :zyro-settings:assembleRelease :zyro-camera:assembleDebug :zyro-camera:assembleRelease :zyro-camera:testDebugUnitTest
 ```
 
-No Gradle wrapper is included yet. The source changes have been committed, but no successful build or physical-device test has been confirmed yet.
+GitHub Actions собирает debug/release AAR обоих модулей, запускает unit-тесты фильтрации разрешения/FPS и публикует AAR-файлы как artifact `zyro-android-libraries`.
 
-## Roadmap
+## Чего пока нет
 
-1. **Foundation** — project structure, settings model, theme tokens. (Initial slice committed)
-2. **Settings UI and persistence** — Compose screen and DataStore. (Initial slice committed)
-3. **Camera2 diagnostics** — camera enumeration, supported sizes, frame-rate ranges, stabilization and HDR metadata. (Implemented; build/device verification pending)
-4. **Video quality and FPS selector** — capability-filtered resolution/FPS choices with a host callback. (Implemented; build/device verification pending)
-5. **Liquid Glass rendering** — implement adjustable visual effects with performance and accessibility fallbacks.
-6. **Compatibility testing** — Android versions, front/rear cameras, rotation, and low-memory behavior.
-7. **Integration assessment** — determine a supported host-app integration path without redistributing or modifying proprietary app code.
+- Готового самостоятельного APK-приложения с Activity/навигацией.
+- Проверки работы предпросмотра и записи на физических устройствах.
+- Реального Liquid Glass blur/transparency renderer.
+- Английской локализации и полноценной страницы настроек региона/языка.
+- Интеграции с TikTok: исходный проект TikTok не предоставлен, а загруженный XAPK — скомпилированный бинарный пакет, не исходники.
+- Готового подписанного APK и опубликованного релиза.
+
+Для интеграции с TikTok потребуется совместимый и разрешённый путь. Библиотека не обходит авторизацию, платежи, защиту аккаунтов, проверку целостности или региональные ограничения.
