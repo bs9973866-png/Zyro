@@ -21,7 +21,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Build, test, and package ZYRO libraries
+      - name: Build, test, and package ZYRO
         run: >
           gradle
           :zyro-settings:assembleDebug
@@ -29,11 +29,13 @@ jobs:
           :zyro-camera:assembleDebug
           :zyro-camera:assembleRelease
           :zyro-camera:testDebugUnitTest
-      - name: Upload Android library artifacts
+          :zyro-demo:assembleDebug
+      - name: Upload APK and AAR artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: zyro-android-libraries
+          name: zyro-android-build
           if-no-files-found: error
           path: |
+            zyro-demo/build/outputs/apk/debug/*.apk
             zyro-settings/build/outputs/aar/*.aar
             zyro-camera/build/outputs/aar/*.aar
