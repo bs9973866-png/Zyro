@@ -43,7 +43,7 @@
 
 ## Подключение библиотек к своему host-проекту
 
-В Android Studio с JDK 17 и Android SDK Platform 36+ подключи модули:
+В Android Studio с JDK 17 и Android SDK Platform 36+ подключи модули. Камерный модуль и demo-приложение требуют Android 7.0 (API 24) или новее:
 
 ```kotlin
 dependencies {
