@@ -179,6 +179,7 @@ fun ZyroCameraDiagnosticsScreen(
                     )
                     currentReport.cameras.forEach { camera ->
                         CameraInfoCard(camera)
+                        ZyroVideoQualitySelector(camera = camera)
                     }
                 }
 
