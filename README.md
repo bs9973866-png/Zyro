@@ -31,6 +31,8 @@ The repository contains an Android Gradle project with two modules.
 - Electronic and optical stabilization capability flags.
 - Dynamic-range profiles (SDR / HLG10 / HDR10 / HDR10+) on Android 13+.
 - Compose diagnostics screen with a permission prompt for extended metadata and a refresh action.
+- Capability-based video quality selector (480p / 720p / 1080p / 1440p / 4K / maximum) and FPS choices (24 / 25 / 30 / 60 / 90 / 120) only when supported by the reported Camera2 metadata.
+- Selection callback returns the chosen resolution and target FPS for a compatible host recorder; it does not itself start recording or guarantee a specific delivered frame rate.
 - Runs metadata queries on an IO dispatcher.
 - Does not open the camera, record audio/video, or take photos.
 
@@ -99,7 +101,7 @@ No Gradle wrapper is included yet. The source changes have been committed, but n
 1. **Foundation** — project structure, settings model, theme tokens. (Initial slice committed)
 2. **Settings UI and persistence** — Compose screen and DataStore. (Initial slice committed)
 3. **Camera2 diagnostics** — camera enumeration, supported sizes, frame-rate ranges, stabilization and HDR metadata. (Implemented; build/device verification pending)
-4. **FPS selector** — expose only supported 30/60 FPS configurations and validate on real devices.
+4. **Video quality and FPS selector** — capability-filtered resolution/FPS choices with a host callback. (Implemented; build/device verification pending)
 5. **Liquid Glass rendering** — implement adjustable visual effects with performance and accessibility fallbacks.
 6. **Compatibility testing** — Android versions, front/rear cameras, rotation, and low-memory behavior.
 7. **Integration assessment** — determine a supported host-app integration path without redistributing or modifying proprietary app code.
