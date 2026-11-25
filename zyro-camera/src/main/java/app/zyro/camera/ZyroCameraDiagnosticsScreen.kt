@@ -201,6 +201,7 @@ fun ZyroCameraDiagnosticsScreen(
                     } ?: currentReport.cameras.first()
                     CameraInfoCard(activeCamera)
                     ZyroVideoQualitySelector(camera = activeCamera)
+                    ZyroCameraRecordingOptions(camera = activeCamera)
                 }
 
                 currentReport?.warnings?.forEach { warning ->
