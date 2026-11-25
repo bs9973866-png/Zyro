@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -171,7 +170,7 @@ private fun RecorderScreen() {
             .background(Color(0xFF090711))
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        contentPadding()
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         ZyroCameraRecorder(
             quality = ZyroVideoQuality.FULL_HD,
@@ -185,4 +184,3 @@ private fun RecorderScreen() {
     }
 }
 
-private fun contentPadding(): Arrangement.Vertical = Arrangement.spacedBy(8.dp)
