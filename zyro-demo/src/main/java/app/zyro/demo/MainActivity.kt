@@ -48,7 +48,8 @@ private enum class Destination(val title: String, val symbol: String) {
     HOME("Главная", "⌂"),
     SETTINGS("Вид", "◈"),
     DIAGNOSTICS("Камера", "◎"),
-    RECORDER("Запись", "●")
+    RECORDER("Запись", "●"),
+    MEDIA("Медиа", "▣")
 }
 
 class MainActivity : ComponentActivity() {
@@ -92,6 +93,7 @@ private fun ZyroHostApp() {
                         onClose = { destination = Destination.HOME.name }
                     )
                     Destination.RECORDER -> RecorderScreen()
+                    Destination.MEDIA -> CreatorStudioScreen()
                 }
             }
         }
@@ -126,6 +128,11 @@ private fun HomeScreen(onOpen: (Destination) -> Unit) {
             description = "Размеры видео, доступные FPS, HDR и стабилизация",
             action = "Проверить устройство"
         ) { onOpen(Destination.DIAGNOSTICS) }
+        HomeCard(
+            title = "Creator Studio",
+            description = "Импорт видео, предпросмотр, данные файла и отправка в другие приложения",
+            action = "Открыть медиастудию"
+        ) { onOpen(Destination.MEDIA) }
         HomeCard(
             title = "Камера и запись",
             description = "Предпросмотр и ручная запись видео без звука",
