@@ -7,3 +7,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "ZYRO"
 include(":zyro-settings")
+include(":zyro-camera")
