@@ -56,6 +56,7 @@ private data class CreatorVideoDetails(
 internal fun CreatorStudioScreen() {
     val context = LocalContext.current
     var uriText by rememberSaveable { mutableStateOf<String?>(null) }
+    var playbackSpeed by rememberSaveable { mutableStateOf(1f) }
     val uri = remember(uriText) { uriText?.let(Uri::parse) }
     var details by remember(uri) { mutableStateOf<CreatorVideoDetails?>(null) }
     var loading by remember(uri) { mutableStateOf(false) }
@@ -181,6 +182,18 @@ internal fun CreatorStudioScreen() {
                     },
                     update = { it.player = player }
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
+                        androidx.compose.material3.FilterChip(
+                            selected = playbackSpeed == speed,
+                            onClick = {
+                                playbackSpeed = speed
+                                player.setPlaybackSpeed(speed)
+                            },
+                            label = { Text("${speed}×") }
+                        )
+                    }
+                }
             }
         } else {
             Card(
