@@ -56,6 +56,10 @@ private data class CreatorVideoDetails(
 internal fun CreatorStudioScreen(initialUri: Uri? = null, initialSharedText: String? = null) {
     val context = LocalContext.current
     var uriText by rememberSaveable { mutableStateOf<String?>(initialUri?.toString()) }
+    var sharedText by rememberSaveable { mutableStateOf(initialSharedText) }
+    LaunchedEffect(initialSharedText) {
+        if (!initialSharedText.isNullOrBlank()) sharedText = initialSharedText
+    }
     LaunchedEffect(initialUri) {
         if (initialUri != null) uriText = initialUri.toString()
     }
