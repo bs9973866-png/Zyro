@@ -12,14 +12,19 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /** Numeric Camera2 AE range, retained for capability-based option filtering. */
 data class ZyroFpsRange(val lower: Int, val upper: Int) {
@@ -91,6 +96,9 @@ fun ZyroVideoQualitySelector(
     modifier: Modifier = Modifier,
     onSelectionChanged: (ZyroVideoSelection) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val settingsRepository = remember(context) { ZyroVideoSettingsRepository(context) }
     val qualities = remember(camera.cameraId, camera.recordingSizes) {
         ZyroVideoOptions.availableQualities(camera)
     }
@@ -104,6 +112,23 @@ fun ZyroVideoQualitySelector(
     var selectedFps by remember(camera.cameraId) {
         mutableStateOf(if (30 in fpsOptions) 30 else fpsOptions.firstOrNull())
     }
+
+    LaunchedEffect(camera.cameraId, qualities, fpsOptions) {
+        val saved = settingsRepository.settings(camera.cameraId).first()
+        selectedQuality = saved?.quality?.takeIf { it in qualities }
+            ?: qualities.firstOrNull { it == ZyroVideoQuality.FULL_HD }
+            ?: qualities.lastOrNull()
+        selectedFps = saved?.fps?.takeIf { it in fpsOptions }
+            ?: if (30 in fpsOptions) 30 else fpsOptions.firstOrNull()
+
+        val quality = selectedQuality
+        val fps = selectedFps
+        val size = quality?.let { ZyroVideoOptions.sizeFor(camera, it) }
+        if (quality != null && size != null && fps != null) {
+            onSelectionChanged(ZyroVideoSelection(quality, size, fps))
+        }
+    }
+
     val selectedSize = selectedQuality?.let { ZyroVideoOptions.sizeFor(camera, it) }
 
     Card(
@@ -134,7 +159,9 @@ fun ZyroVideoQualitySelector(
                                 val size = ZyroVideoOptions.sizeFor(camera, quality)
                                 val fps = selectedFps
                                 if (size != null && fps != null) {
-                                    onSelectionChanged(ZyroVideoSelection(quality, size, fps))
+                                    val selection = ZyroVideoSelection(quality, size, fps)
+                                    onSelectionChanged(selection)
+                                    scope.launch { settingsRepository.save(camera.cameraId, selection) }
                                 }
                             },
                             label = { Text(quality.label) }
@@ -163,7 +190,9 @@ fun ZyroVideoQualitySelector(
                                 val quality = selectedQuality
                                 val size = quality?.let { ZyroVideoOptions.sizeFor(camera, it) }
                                 if (quality != null && size != null) {
-                                    onSelectionChanged(ZyroVideoSelection(quality, size, fps))
+                                    val selection = ZyroVideoSelection(quality, size, fps)
+                                    onSelectionChanged(selection)
+                                    scope.launch { settingsRepository.save(camera.cameraId, selection) }
                                 }
                             },
                             label = { Text("${fps} FPS") }
