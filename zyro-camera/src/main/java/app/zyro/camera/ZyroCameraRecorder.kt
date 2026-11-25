@@ -14,7 +14,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.MediaStoreOutputOptions
-import androidx.camera.video.OutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
@@ -229,27 +228,33 @@ fun ZyroCameraRecorder(
                                 runCatching {
                                     var fallbackFile: File? = null
                                     val fileName = "zyro-${System.currentTimeMillis()}.mp4"
-                                    val outputOptions: OutputOptions =
+                                    val pendingRecording =
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                             val values = ContentValues().apply {
                                                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                                                 put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
                                                 put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/ZYRO")
                                             }
-                                            MediaStoreOutputOptions.Builder(
-                                                context.contentResolver,
-                                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-                                            ).setContentValues(values).build()
+                                            capture.output.prepareRecording(
+                                                context,
+                                                MediaStoreOutputOptions.Builder(
+                                                    context.contentResolver,
+                                                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                                                ).setContentValues(values).build()
+                                            )
                                         } else {
                                             val directory = File(context.filesDir, "Movies/ZYRO")
                                             check(directory.exists() || directory.mkdirs()) {
                                                 "Не удалось создать папку для видео."
                                             }
-                                            File(directory, fileName).also { fallbackFile = it }
-                                                .let { FileOutputOptions.Builder(it).build() }
+                                            val outputFile = File(directory, fileName)
+                                            fallbackFile = outputFile
+                                            capture.output.prepareRecording(
+                                                context,
+                                                FileOutputOptions.Builder(outputFile).build()
+                                            )
                                         }
-                                    val newRecording = capture.output
-                                        .prepareRecording(context, outputOptions)
+                                    val newRecording = pendingRecording
                                         .start(mainExecutor) { event ->
                                             when (event) {
                                                 is VideoRecordEvent.Start -> isRecording = true
