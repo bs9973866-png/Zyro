@@ -57,17 +57,25 @@ private enum class Destination(val title: String, val symbol: String) {
 
 class MainActivity : ComponentActivity() {
     private val incomingVideo = mutableStateOf<Uri?>(null)
+    private val incomingText = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         incomingVideo.value = extractSharedVideo(intent)
-        setContent { ZyroHostApp(incomingVideo.value) }
+        incomingText.value = extractSharedText(intent)
+        setContent { ZyroHostApp(incomingVideo.value, incomingText.value) }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         incomingVideo.value = extractSharedVideo(intent)
+        incomingText.value = extractSharedText(intent)
+    }
+
+    private fun extractSharedText(source: Intent?): String? {
+        if (source?.action != Intent.ACTION_SEND || source.type != "text/plain") return null
+        return source.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
     }
 
     private fun extractSharedVideo(source: Intent?): Uri? {
@@ -84,11 +92,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun ZyroHostApp(sharedVideoUri: Uri?) {
+private fun ZyroHostApp(sharedVideoUri: Uri?, sharedText: String?) {
     var destination by rememberSaveable { mutableStateOf(Destination.HOME.name) }
     val selected = Destination.valueOf(destination)
-    androidx.compose.runtime.LaunchedEffect(sharedVideoUri) {
-        if (sharedVideoUri != null) destination = Destination.MEDIA.name
+    androidx.compose.runtime.LaunchedEffect(sharedVideoUri, sharedText) {
+        if (sharedVideoUri != null || sharedText != null) destination = Destination.MEDIA.name
     }
 
     MaterialTheme {
@@ -120,7 +128,7 @@ private fun ZyroHostApp(sharedVideoUri: Uri?) {
                         onClose = { destination = Destination.HOME.name }
                     )
                     Destination.RECORDER -> RecorderScreen()
-                    Destination.MEDIA -> CreatorStudioScreen(initialUri = sharedVideoUri)
+                    Destination.MEDIA -> CreatorStudioScreen(initialUri = sharedVideoUri, initialSharedText = sharedText)
                 }
             }
         }

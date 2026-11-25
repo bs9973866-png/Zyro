@@ -53,7 +53,7 @@ private data class CreatorVideoDetails(
 )
 
 @Composable
-internal fun CreatorStudioScreen(initialUri: Uri? = null) {
+internal fun CreatorStudioScreen(initialUri: Uri? = null, initialSharedText: String? = null) {
     val context = LocalContext.current
     var uriText by rememberSaveable { mutableStateOf<String?>(initialUri?.toString()) }
     LaunchedEffect(initialUri) {
@@ -152,9 +152,28 @@ internal fun CreatorStudioScreen(initialUri: Uri? = null) {
         Text("Медиастудия", color = Color(0xFFF5F0FF),
             fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Text(
-            "Выбирай видео из памяти телефона, смотри предпросмотр и отправляй его в установленные приложения.",
+            "Выбирай видео из памяти телефона, смотри предпросмотр и отправляй его в установленные приложения. Можно также поделиться ссылкой из TikTok.",
             color = Color(0xFFAAA2BC), fontSize = 14.sp
         )
+        sharedText?.let { textValue ->
+            val sharedUri = runCatching { Uri.parse(textValue.trim()) }.getOrNull()
+            val isWebLink = sharedUri?.scheme == "https" || sharedUri?.scheme == "http"
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF171326))
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Полученная ссылка или текст", color = Color(0xFFF5F0FF), fontWeight = FontWeight.Bold)
+                    Text(textValue, color = Color(0xFFAAA2BC), fontSize = 12.sp)
+                    if (isWebLink && sharedUri != null) {
+                        OutlinedButton(onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, sharedUri))
+                        }) { Text("Открыть ссылку") }
+                    }
+                }
+            }
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { picker.launch(arrayOf("video/*")) }) {
