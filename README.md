@@ -43,7 +43,7 @@
 
 ## Подключение библиотек к своему host-проекту
 
-В Android Studio с JDK 17 и Android SDK Platform 35+ подключи модули:
+В Android Studio с JDK 17 и Android SDK Platform 36+ подключи модули:
 
 ```kotlin
 dependencies {
@@ -89,7 +89,7 @@ ZyroCameraRecorder(
 
 ## Сборка
 
-В проекте пока нет Gradle Wrapper. При установленном Gradle 8.9:
+В проекте пока нет Gradle Wrapper. При установленном Gradle 8.13:
 
 ```bash
 gradle :zyro-settings:assembleDebug :zyro-settings:assembleRelease :zyro-camera:assembleDebug :zyro-camera:assembleRelease :zyro-camera:testDebugUnitTest :zyro-demo:assembleDebug

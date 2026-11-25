@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "app.zyro.camera"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 23

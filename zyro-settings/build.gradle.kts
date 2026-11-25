@@ -5,7 +5,7 @@ plugins {
 }
 android {
     namespace = "app.zyro.settings"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig { minSdk = 23; consumerProguardFiles("consumer-rules.pro") }
     buildFeatures { compose = true }
     compileOptions {

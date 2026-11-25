@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "app.zyro.demo"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "app.zyro.demo"
