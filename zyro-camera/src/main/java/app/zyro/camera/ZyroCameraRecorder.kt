@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -33,6 +34,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -89,6 +91,11 @@ fun ZyroCameraRecorder(
     }
     var selectedLens by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
+    var boundCamera by remember { mutableStateOf<Camera?>(null) }
+    var zoomRatio by remember { mutableStateOf(1f) }
+    var maxZoomRatio by remember { mutableStateOf(1f) }
+    var hasFlashUnit by remember { mutableStateOf(false) }
+    var torchEnabled by remember { mutableStateOf(false) }
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var isCameraReady by remember { mutableStateOf(false) }
     var isRecording by remember { mutableStateOf(false) }
@@ -114,6 +121,9 @@ fun ZyroCameraRecorder(
 
         isCameraReady = false
         videoCapture = null
+        boundCamera = null
+        torchEnabled = false
+        zoomRatio = 1f
         cameraError = null
 
         try {
@@ -150,7 +160,11 @@ fun ZyroCameraRecorder(
                 .requireLensFacing(selectedLens)
                 .build()
 
-            provider.bindToLifecycle(lifecycleOwner, selector, preview, capture)
+            val camera = provider.bindToLifecycle(lifecycleOwner, selector, preview, capture)
+            boundCamera = camera
+            maxZoomRatio = camera.cameraInfo.zoomState.value?.maxZoomRatio ?: 1f
+            zoomRatio = 1f
+            hasFlashUnit = camera.cameraInfo.hasFlashUnit()
             cameraProvider = provider
             videoCapture = capture
             isCameraReady = true
@@ -207,6 +221,33 @@ fun ZyroCameraRecorder(
                         enabled = !isRecording,
                         onClick = { selectedLens = CameraSelector.LENS_FACING_FRONT },
                         label = { Text("Фронтальная") }
+                    )
+                }
+
+                if (maxZoomRatio > 1.01f) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Зум · " + String.format(java.util.Locale.US, "%.1f×", zoomRatio), color = RecorderText)
+                        Slider(
+                            value = zoomRatio.coerceIn(1f, maxZoomRatio),
+                            onValueChange = { value ->
+                                zoomRatio = value
+                                boundCamera?.cameraControl?.setZoomRatio(value)
+                            },
+                            valueRange = 1f..maxZoomRatio,
+                            enabled = !isRecording
+                        )
+                    }
+                }
+                if (hasFlashUnit) {
+                    FilterChip(
+                        selected = torchEnabled,
+                        enabled = !isRecording,
+                        onClick = {
+                            val next = !torchEnabled
+                            boundCamera?.cameraControl?.enableTorch(next)
+                            torchEnabled = next
+                        },
+                        label = { Text(if (torchEnabled) "Фонарик включён" else "Фонарик") }
                     )
                 }
 
