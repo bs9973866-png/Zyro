@@ -176,11 +176,6 @@ fun ZyroVideoQualitySelector(
                 color = OptionMuted,
                 style = MaterialTheme.typography.bodySmall
             )
-            if (selectedQuality != null && selectedSize != null && selectedFps != null) {
-                onSelectionChanged(
-                    ZyroVideoSelection(selectedQuality!!, selectedSize, selectedFps!!)
-                )
-            }
         }
     }
 }
