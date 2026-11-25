@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -73,6 +74,7 @@ internal fun CreatorStudioScreen(initialUri: Uri? = null, initialSharedText: Str
     var uriText by rememberSaveable { mutableStateOf<String?>(initialUri?.toString()) }
     var sharedText by rememberSaveable { mutableStateOf(initialSharedText) }
     var playbackSpeed by rememberSaveable { mutableStateOf(1f) }
+    var removeAudio by rememberSaveable { mutableStateOf(false) }
     var trimStartMs by rememberSaveable { mutableStateOf(0f) }
     var trimEndMs by rememberSaveable { mutableStateOf(0f) }
     var exporting by remember { mutableStateOf(false) }
@@ -184,7 +186,9 @@ internal fun CreatorStudioScreen(initialUri: Uri? = null, initialSharedText: Str
                     .build()
             )
             .build()
-        val editedItem = EditedMediaItem.Builder(clippedItem).build()
+        val editedItem = EditedMediaItem.Builder(clippedItem)
+            .setRemoveAudio(removeAudio)
+            .build()
         val transformer = Transformer.Builder(context)
             .addListener(object : Transformer.Listener {
                 override fun onCompleted(composition: Composition, exportResult: ExportResult) {
@@ -382,6 +386,20 @@ internal fun CreatorStudioScreen(initialUri: Uri? = null, initialSharedText: Str
                             "Выбранный фрагмент: ${formatVideoDuration((trimEndMs - trimStartMs).toLong())}",
                             color = Color(0xFFF5F0FF)
                         )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Checkbox(
+                                checked = removeAudio,
+                                onCheckedChange = { removeAudio = it },
+                                enabled = !exporting
+                            )
+                            Column(modifier = Modifier.padding(top = 10.dp)) {
+                                Text("Убрать звук из копии", color = Color(0xFFF5F0FF))
+                                Text("Оригинальный файл не изменится", color = Color(0xFFAAA2BC), fontSize = 12.sp)
+                            }
+                        }
                         Button(
                             onClick = { startExport() },
                             enabled = !exporting && trimEndMs - trimStartMs >= 1000f,
