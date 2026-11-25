@@ -1,25 +1,45 @@
 # ZYRO
 
-**ZYRO** — Android customization project for a TikTok-compatible experience. The goal is to provide a polished settings layer and device-aware camera controls while keeping account security and platform safeguards intact.
+**ZYRO** — Android customization project for a TikTok-compatible experience. The project is being built as a modular Android library so its own settings UI can be integrated only through a compatible, authorized host-app path.
 
-> This repository is currently a clean starting point. No TikTok APK, proprietary source code, signing keys, or credentials are included.
+> ZYRO does not include TikTok's proprietary source, APK, signing keys, credentials, or private service endpoints. The current settings module is an independent library and is not injected into TikTok.
 
-## Product vision
+## Current implementation
 
-- A dedicated **ZYRO Settings** entry reachable from the app's profile/settings area, where integration is supported.
-- A premium dark interface with optional Liquid Glass styling.
-- Camera capability detection and clear 30/60 FPS choices only when the active camera reports those modes as supported.
-- Per-device diagnostics, feature compatibility indicators, and safe fallbacks.
-- A modular architecture so unsupported features can be disabled without breaking the base app.
+The repository now contains an Android Gradle project and the `zyro-settings` Android library module.
+
+Implemented in this first slice:
+
+- Jetpack Compose settings screen in Russian.
+- Dark ZYRO visual foundation with purple accent.
+- Liquid Glass master toggle.
+- Blur and transparency toggles (these store preferences; a host must implement the actual visual effects).
+- Surface intensity, corner radius, and animation-strength controls.
+- System / dark / light appearance mode selection.
+- Reduce-motion accessibility option.
+- Violet / pink / cyan accent preset selection.
+- Reset appearance settings.
+- Local persistence with Android DataStore Preferences.
+
+### Module entry point
+
+The host app can render the settings screen from Compose:
+
+```kotlin
+ZyroSettingsScreen(
+    onClose = { /* return to the host app's settings */ }
+)
+```
+
+Add the module to an authorized Android host project and include its dependency:
+
+```kotlin
+implementation(project(":zyro-settings"))
+```
+
+The library currently uses namespace `app.zyro.settings`, minSdk 23, compileSdk 35, Kotlin 2.0.21, Android Gradle Plugin 8.7.3, and Java 17 bytecode.
 
 ## Planned settings
-
-### Appearance
-- Liquid Glass: blur, translucency, surface intensity, corner radius, and animation strength.
-- Accent color presets and custom accent.
-- Light / dark / system theme.
-- Reduce motion and reduce transparency options.
-- Restore defaults.
 
 ### Camera
 - Detect available cameras and query supported output sizes / frame-rate ranges.
@@ -37,53 +57,43 @@
 - No claims that a setting can force a server-side video format.
 
 ### Region and language
-- Show the app's reported region / language information where it is available.
+- Show app-reported region / language information where available.
 - Locale and interface-language preferences.
-- Explain that account region, catalog availability, and server-side feature eligibility are controlled by the platform. ZYRO will not spoof identity, location, or eligibility, or bypass regional restrictions.
+- Account region, catalog availability, and server-side feature eligibility remain controlled by the platform. ZYRO will not spoof identity, location, or eligibility, or bypass regional restrictions.
 
-### Privacy and security
+### Privacy and quality of life
 - Local-only settings storage by default.
 - No collection of TikTok passwords, session cookies, or authentication tokens.
 - Clear cache controls limited to ZYRO-owned data.
 - Diagnostics export with personal data redacted.
-- Permission and privacy dashboard.
-
-### Quality of life
-- Search settings.
-- Favorites / pinned settings.
-- Import / export ZYRO preferences (no account data).
-- Per-feature compatibility labels: Supported, Limited, Unsupported.
-- Changelog, diagnostics, and reset options.
-- Accessibility: scalable text, contrast controls, reduced motion.
+- Settings search, favorites, import/export of ZYRO preferences, compatibility labels, changelog, diagnostics, and reset options.
 - Russian and English localization.
 
-## Technical direction
+## Technical constraints
 
-- Android-first project.
-- Kotlin for Android integration and Camera2 capability inspection.
-- Jetpack Compose for ZYRO-owned settings UI, if compatible with the chosen integration approach.
-- A feature registry with capability checks and safe fallbacks.
-- Automated unit tests for settings, capability parsing, and configuration validation.
-
-## Important constraints
-
-- TikTok is a proprietary third-party application. This repository does not contain or redistribute its APK, proprietary code, assets, or signing material.
-- Integration must respect applicable platform terms and Android security boundaries.
+- TikTok is proprietary. A compiled APK is not the original editable Kotlin/Java project.
+- The current module does not modify, inject into, or repackage TikTok.
+- Integration must use a compatible, authorized route and respect Android security boundaries and applicable platform terms.
 - Do not patch authentication, payment, anti-abuse, integrity, or account-protection mechanisms.
-- Do not spoof GPS, device identity, account region, or server eligibility.
 - Camera controls must be based on Android-reported device capabilities; never advertise unsupported FPS modes.
-- A standalone settings prototype can be built before any app integration is attempted.
+- Blur/transparency controls in this initial UI are stored preferences only. Rendering effects must be supplied by the host integration.
 
-## Milestones
+## Build
 
-1. **Foundation** — project structure, branding, settings model, theme tokens.
-2. **Settings prototype** — ZYRO settings screen, navigation, search, persistence.
+Open the repository in Android Studio with JDK 17 and Android SDK Platform 35 installed. Then build the library module:
+
+```bash
+gradle :zyro-settings:assembleDebug
+```
+
+No Gradle wrapper is included yet. The repository changes have not been compiled or device-tested in this environment.
+
+## Roadmap
+
+1. **Foundation** — project structure, settings model, theme tokens. (Initial slice committed)
+2. **Settings UI and persistence** — Compose screen and DataStore. (Initial slice committed)
 3. **Camera diagnostics** — enumerate cameras and report Camera2 capabilities.
 4. **FPS selector** — expose only supported 30/60 FPS configurations and validate on real devices.
-5. **Liquid Glass** — implement adjustable visual effects with performance and accessibility fallbacks.
+5. **Liquid Glass rendering** — implement adjustable visual effects with performance and accessibility fallbacks.
 6. **Compatibility testing** — Android versions, front/rear cameras, rotation, lifecycle, and low-memory behavior.
-7. **Integration assessment** — determine a supported integration path without redistributing or modifying proprietary app code.
-
-## Status
-
-Planning / initial scaffold. No APK integration or device validation has been completed yet.
+7. **Integration assessment** — determine a supported host-app integration path without redistributing or modifying proprietary app code.
